@@ -222,9 +222,51 @@ this.gl.drawArrays(this.gl.LINES, 0, 6);
 
 ## Part 3 - Texturing
 
+mipmap will generate different sizes
+
+---
+
+you can await your texture to load and then do the logic in the case that you don't want to request the animation loop.
+
+---
+
+You can also create a placeholder image until the texture loads via:
+
+```ts
+this.gl.texImage2D(
+  this.gl.TEXTURE_2D,
+  0,
+  this.gl.RGBA,
+  1, // width of 1 pixel
+  1, // height of 1 pixel
+  0, // border of 0 pixels
+  this.gl.RGBA,
+  this.gl.UNSIGNED_BYTE,
+  new Uint8Array([255, 0, 255, 255]) // rgba
+);
+```
+
+---
+
+the image loads upside down due to legacy reasons from c-lang.
+
+You can set this globally via
+
+```ts
+this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+```
+
+---
+
+you can repeat the image or show part of the image by adjustting the texture coordinates values used to create the texture buffer. The image goes from 0 to 1, so changing the points to go from 0 to 2 will repeat, or 0 to 0.5 will show half.
+
 ## Part 4 - Drawing with an Index Buffer
 
 ##
+
+```
+
+```
 
 ```
 

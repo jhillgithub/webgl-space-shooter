@@ -1,14 +1,17 @@
 import vertexShaderSource from "./shaders/part1/vertex.glsl?raw";
 import fragmentShaderSource from "./shaders/part1/fragment.glsl?raw";
+import textureUri from "./assets/textures/test.png";
 
 class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGL2RenderingContext;
   private program: WebGLProgram;
+  private texture: WebGLTexture;
 
   constructor() {
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl2") as WebGL2RenderingContext;
+    this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
 
     const vertexShader = this.createShader(
       this.gl.VERTEX_SHADER,
@@ -22,14 +25,25 @@ class Renderer {
     this.program = this.createProgram(vertexShader, fragmentShader);
     this.gl.useProgram(this.program);
 
-    this.createBuffer([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5]);
+    this.texture = this.loadTexture(textureUri)!;
+
+    const positionBuffer = this.createBuffer([
+      -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5,
+    ]);
 
     this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(0);
 
-    this.createBuffer([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
-    this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
+    const textureCoords = [0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0];
+    const textureBuffer = this.createBuffer(textureCoords);
+    this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(1);
+
+    const colorBuffer = this.createBuffer([
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ]);
+    this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, 0, 0);
+    this.gl.enableVertexAttribArray(2);
   }
 
   private createProgram(
@@ -75,13 +89,35 @@ class Renderer {
     return buffer;
   }
 
-  public render(): void {
+  private loadTexture(uri: string): WebGLTexture {
+    const texture = this.gl.createTexture()!;
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    const image = new Image();
+    image.onload = () => {
+      this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+      this.gl.texImage2D(
+        this.gl.TEXTURE_2D,
+        0,
+        this.gl.RGBA,
+        this.gl.RGBA,
+        this.gl.UNSIGNED_BYTE,
+        image
+      );
+      this.gl.generateMipmap(this.gl.TEXTURE_2D);
+    };
+    image.src = uri;
+    return texture;
+  }
+
+  public draw(): void {
     this.gl.clearColor(0.0, 1.0, 1.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+
+    window.requestAnimationFrame(() => this.draw());
   }
 }
 
 const renderer = new Renderer();
-renderer.render();
+renderer.draw();
