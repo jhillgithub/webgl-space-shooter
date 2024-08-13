@@ -176,11 +176,59 @@ void main()
 }
 ```
 
+---
+
+Note: this draws the primitives which in this case is triangles. However, you can also draw points or lines. This corresponds to the primitive assembly step of the graphics pipeline where you choose the shape to draw.
+
+For points, you can do this:
+
+```ts
+this.gl.drawArrays(this.gl.POINTS, 0, 3);
+```
+
+But, you also need to set a larger point size in the vertex shader so you can see the points. this is done via gl_PointSize
+
+```glsl
+gl_PointSize = 20.0;
+```
+
+In order to draw lines, you need to increase the number of points in the data buffer so that there is a start and stop for each segment. You also need to duplicate the colors.
+
+```ts
+this.createBuffer([
+  -0.5, -0.5,
+  -0.5, 0.5,
+  -0.5, 0.5,
+  0.5, -0.5,
+  0.5, -0.5,
+  -0.5, -0.5
+]);
+
+this.createBuffer({
+  1,0,0,
+  1,0,0,
+  0,1,0,
+  0,1,0,
+  0,0,1,
+  0,0,1
+})
+```
+
+and then increase the number of points
+
+```ts
+this.gl.drawArrays(this.gl.LINES, 0, 6);
+```
+
 ## Part 3 - Texturing
 
 ## Part 4 - Drawing with an Index Buffer
 
 ##
+
+```
+
+```
 
 ```
 
