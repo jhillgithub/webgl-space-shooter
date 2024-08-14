@@ -2,11 +2,16 @@ import vertexShaderSource from "./shaders/part1/vertex.glsl?raw";
 import fragmentShaderSource from "./shaders/part1/fragment.glsl?raw";
 import { Texture } from "./texture";
 import { Content } from "./content";
+import { Camera } from "./camera";
+import { Rect } from "./rect";
 
 export class Renderer {
   private canvas!: HTMLCanvasElement;
   private gl!: WebGL2RenderingContext;
   private program!: WebGLProgram;
+  private camera!: Camera;
+  private projectionViewMatrixLocation!: WebGLUniformLocation;
+  private buffer!: WebGLBuffer;
 
   constructor() {}
 
@@ -14,6 +19,8 @@ export class Renderer {
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl2") as WebGL2RenderingContext;
     this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    this.camera = new Camera(this.canvas.width, this.canvas.height);
 
     await Content.initialize(this.gl);
 
@@ -27,15 +34,24 @@ export class Renderer {
     );
 
     this.program = this.createProgram(vertexShader, fragmentShader);
+    this.projectionViewMatrixLocation = this.gl.getUniformLocation(
+      this.program,
+      "projectionViewMatrix"
+    )!;
     this.gl.useProgram(this.program);
 
+    const x = 100;
+    const y = 100;
+    const w = 200;
+    const h = 200;
+
     // prettier-ignore
-    const buffer = this.createBuffer([
+    this.buffer = this.createBuffer([
       // x, y, u, v, r, g, b
-      -0.5, -0.5, 0, 0, 1, 1, 1,
-      -0.5, 0.5, 0, 1, 1, 1, 1,
-      0.5, -0.5, 1, 0, 1, 1, 1,
-      0.5, 0.5, 1, 1, 1, 1, 1,
+      x, y, 0, 1, 1, 1, 1,  // left top
+      x+w, y, 1, 1, 1, 1, 1,   // right top
+      x+w, y+h, 1, 0, 1, 1, 1,  // right bottom
+      x, y+h, 0, 0, 1, 1, 1, // left bottom
     ]);
 
     const stride =
@@ -66,8 +82,12 @@ export class Renderer {
     );
     this.gl.enableVertexAttribArray(2);
 
+    // prettier-ignore
     const indexBuffer = this.createIndexBuffer(
-      new Uint8Array([0, 1, 2, 2, 1, 3])
+      new Uint8Array([
+        0, 1, 3,
+        1, 2, 3
+        ])
     );
   }
 
@@ -125,9 +145,17 @@ export class Renderer {
   }
 
   public draw(): void {
+    this.camera.update();
+
     this.gl.clearColor(0.0, 1.0, 1.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     this.gl.bindTexture(this.gl.TEXTURE_2D, Content.playerTexture.texture);
+
+    this.gl.uniformMatrix4fv(
+      this.projectionViewMatrixLocation,
+      false,
+      this.camera.projectionViewMatrix
+    );
 
     // this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_BYTE, 0);

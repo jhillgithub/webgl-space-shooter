@@ -335,3 +335,10 @@ x, y, u, v, r, g, b
     );
   }
 ```
+
+## Setup orthographic camera for 2d
+
+the projection sets up how the world will look (ortho vs perspective)
+the view sets up where we are in the world
+
+multiplying by a matrix is basically how we map to the -1,1 coordinate space of webgl
