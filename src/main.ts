@@ -28,22 +28,24 @@ class Renderer {
     this.texture = this.loadTexture(textureUri)!;
 
     const positionBuffer = this.createBuffer([
-      -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5,
+      -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
     ]);
 
     this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(0);
 
-    const textureCoords = [0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0];
+    const textureCoords = [0, 0, 0, 1, 1, 0, 1, 1];
     const textureBuffer = this.createBuffer(textureCoords);
     this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(1);
 
-    const colorBuffer = this.createBuffer([
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    ]);
+    const colorBuffer = this.createBuffer([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
     this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(2);
+
+    const indexBuffer = this.createIndexBuffer(
+      new Uint8Array([0, 1, 2, 2, 1, 3])
+    );
   }
 
   private createProgram(
@@ -109,11 +111,22 @@ class Renderer {
     return texture;
   }
 
+  private createIndexBuffer(
+    data: Uint8Array | Uint16Array | Uint32Array
+  ): WebGLBuffer {
+    const buffer = this.gl.createBuffer()!;
+    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
+    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
+
+    return buffer;
+  }
+
   public draw(): void {
     this.gl.clearColor(0.0, 1.0, 1.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+    // this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+    this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_BYTE, 0);
 
     window.requestAnimationFrame(() => this.draw());
   }
