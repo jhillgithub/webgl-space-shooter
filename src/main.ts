@@ -27,20 +27,41 @@ class Renderer {
 
     this.texture = this.loadTexture(textureUri)!;
 
-    const positionBuffer = this.createBuffer([
-      -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
+    // prettier-ignore
+    const buffer = this.createBuffer([
+      // x, y, u, v, r, g, b
+      -0.5, -0.5, 0, 0, 1, 1, 1,
+      -0.5, 0.5, 0, 1, 1, 1, 1,
+      0.5, -0.5, 1, 0, 1, 1, 1,
+      0.5, 0.5, 1, 1, 1, 1, 1,
     ]);
 
-    this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 0, 0);
+    const stride =
+      2 * Float32Array.BYTES_PER_ELEMENT +
+      2 * Float32Array.BYTES_PER_ELEMENT +
+      3 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, stride, 0);
     this.gl.enableVertexAttribArray(0);
 
-    const textureCoords = [0, 0, 0, 1, 1, 0, 1, 1];
-    const textureBuffer = this.createBuffer(textureCoords);
-    this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribPointer(
+      1,
+      2,
+      this.gl.FLOAT,
+      false,
+      stride,
+      2 * Float32Array.BYTES_PER_ELEMENT
+    );
     this.gl.enableVertexAttribArray(1);
 
-    const colorBuffer = this.createBuffer([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
-    this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribPointer(
+      2,
+      3,
+      this.gl.FLOAT,
+      false,
+      stride,
+      4 * Float32Array.BYTES_PER_ELEMENT
+    );
     this.gl.enableVertexAttribArray(2);
 
     const indexBuffer = this.createIndexBuffer(

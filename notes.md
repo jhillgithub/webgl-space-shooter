@@ -262,20 +262,76 @@ you can repeat the image or show part of the image by adjustting the texture coo
 
 ## Part 4 - Drawing with an Index Buffer
 
-##
+Index buffers allow you to reuse vertex points.
 
+```ts
+const indexBuffer = this.createIndexBuffer(new Uint8Array([0, 1, 2, 2, 1, 3]));
 ```
 
+```ts
+private createIndexBuffer(
+    data: Uint8Array | Uint16Array | Uint32Array
+  ): WebGLBuffer {
+    const buffer = this.gl.createBuffer()!;
+    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
+    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
+
+    return buffer;
+  }
 ```
 
+you then change the draw method from drawArrays to drawElements
+
+```ts
+// this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_BYTE, 0);
 ```
 
-```
+## Interleaved Buffers
 
-```
+You can combine the position buffer, texBuffer, and colorBuffer into one
+x, y, u, v, r, g, b
 
-```
+```ts
+// prettier-ignore
+    const buffer = this.createBuffer([
+      // x, y, u, v, r, g, b
+      -0.5, -0.5, 0, 0, 1, 1, 1,
+      -0.5, 0.5, 0, 1, 1, 1, 1,
+      0.5, -0.5, 1, 0, 1, 1, 1,
+      0.5, 0.5, 1, 1, 1, 1, 1,
+    ]);
 
-```
+    const stride =
+      2 * Float32Array.BYTES_PER_ELEMENT +
+      2 * Float32Array.BYTES_PER_ELEMENT +
+      3 * Float32Array.BYTES_PER_ELEMENT;
 
+    this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, stride, 0);
+    this.gl.enableVertexAttribArray(0);
+
+    this.gl.vertexAttribPointer(
+      1,
+      2,
+      this.gl.FLOAT,
+      false,
+      stride,
+      2 * Float32Array.BYTES_PER_ELEMENT
+    );
+    this.gl.enableVertexAttribArray(1);
+
+    this.gl.vertexAttribPointer(
+      2,
+      3,
+      this.gl.FLOAT,
+      false,
+      stride,
+      4 * Float32Array.BYTES_PER_ELEMENT
+    );
+    this.gl.enableVertexAttribArray(2);
+
+    const indexBuffer = this.createIndexBuffer(
+      new Uint8Array([0, 1, 2, 2, 1, 3])
+    );
+  }
 ```
