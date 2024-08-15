@@ -342,3 +342,27 @@ the projection sets up how the world will look (ortho vs perspective)
 the view sets up where we are in the world
 
 multiplying by a matrix is basically how we map to the -1,1 coordinate space of webgl
+
+## Alpha Blending
+
+```ts
+this.gl.clearColor(0.8, 0.8, 0.8, 1.0);
+this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+this.gl.enable(this.gl.BLEND);
+this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+```
+
+enabling the alpha blending will prevent the png transparent parts from showing the background color. with the blend function above, you will get the source color (sprite color) when the alpha of the sprite is 1
+
+```math
+src * alpha + dest * (1-alpha)
+src * 1 + dest * (1-0)
+=src
+```
+
+when alpha is 0
+
+```math
+src * 0 + dest * (1-0)
+= dest
+```
