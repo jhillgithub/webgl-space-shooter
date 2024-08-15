@@ -2,7 +2,7 @@ import { Content } from "./content";
 import { Rect } from "./rect";
 import { SpriteRenderer } from "./sprite-renderer";
 
-export class Renderer {
+export class Engine {
   private canvas!: HTMLCanvasElement;
   private gl!: WebGL2RenderingContext;
   private spriteRenderer!: SpriteRenderer;
