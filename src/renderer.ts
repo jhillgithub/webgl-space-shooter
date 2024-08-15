@@ -4,6 +4,7 @@ import { Texture } from "./texture";
 import { Content } from "./content";
 import { Camera } from "./camera";
 import { Rect } from "./rect";
+import { BufferUtil } from "./buffer-util";
 
 export class Renderer {
   private canvas!: HTMLCanvasElement;
@@ -40,7 +41,7 @@ export class Renderer {
       "projectionViewMatrix"
     )!;
     this.gl.useProgram(this.program);
-    this.buffer = this.createArrayBuffer(this.data);
+    this.buffer = BufferUtil.createArrayBuffer(this.gl, this.data);
 
     const stride =
       2 * Float32Array.BYTES_PER_ELEMENT +
@@ -71,7 +72,8 @@ export class Renderer {
     this.gl.enableVertexAttribArray(2);
 
     // prettier-ignore
-    const indexBuffer = this.createIndexBuffer(
+    const indexBuffer = BufferUtil.createIndexBuffer(
+      this.gl,
       new Uint8Array([
         0, 1, 3,
         1, 2, 3
@@ -109,23 +111,6 @@ export class Renderer {
       );
     }
     return shader;
-  }
-
-  private createArrayBuffer(data: Float32Array): WebGLBuffer {
-    const buffer = this.gl.createBuffer()!;
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
-    return buffer;
-  }
-
-  private createIndexBuffer(
-    data: Uint8Array | Uint16Array | Uint32Array
-  ): WebGLBuffer {
-    const buffer = this.gl.createBuffer()!;
-    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
-    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
-
-    return buffer;
   }
 
   public drawSprite(texture: Texture, rect: Rect) {
@@ -184,8 +169,11 @@ export class Renderer {
   public draw(): void {
     this.camera.update();
 
-    this.gl.clearColor(0.0, 1.0, 1.0, 1.0);
+    this.gl.clearColor(0.8, 0.8, 0.8, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    this.gl.enable(this.gl.BLEND);
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+
     this.drawSprite(Content.playerTexture, new Rect(100, 100, 99, 75));
     this.drawSprite(Content.ufoBlue, new Rect(300, 100, 91, 91));
     this.drawSprite(Content.ufoBlue, new Rect(100, 300, 91, 91));
