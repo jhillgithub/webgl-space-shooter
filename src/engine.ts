@@ -35,6 +35,12 @@ export class Engine {
       Content.playerTexture,
       new Rect(100, 100, 99, 75)
     );
+    this.spriteRenderer.drawSprite(Content.ufoBlue, new Rect(300, 300, 91, 91));
+
+    this.spriteRenderer.drawSprite(
+      Content.playerTexture,
+      new Rect(150, 100, 99, 75)
+    );
     this.spriteRenderer.drawSprite(Content.ufoBlue, new Rect(300, 100, 91, 91));
     this.spriteRenderer.drawSprite(Content.ufoBlue, new Rect(100, 300, 91, 91));
     this.spriteRenderer.end();

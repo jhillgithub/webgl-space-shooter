@@ -6,18 +6,46 @@ import fragmentShaderSource from "./shaders/part1/fragment.glsl?raw";
 import vertexShaderSource from "./shaders/part1/vertex.glsl?raw";
 import { Texture } from "./texture";
 
+const MAX_NUMBER_OF_SPRITES = 1000;
+const FLOATS_PER_VERTEX = 7; // x, y, u, v, r, g, b
+const FLOATS_PER_SPRITE = 4; // each sprite has four corners
+const INDICES_PER_SPRITE = 6; // two triangles to form a rect require 6 vertices
+
 export class SpriteRenderer {
+  private instanceCount = 0;
   private program!: WebGLProgram;
   private camera!: Camera;
   private projectionViewMatrixLocation!: WebGLUniformLocation;
   private buffer!: WebGLBuffer;
-  private data: Float32Array = new Float32Array(7 * 4);
+  private indexBuffer!: WebGLBuffer;
+  private data: Float32Array = new Float32Array(
+    MAX_NUMBER_OF_SPRITES * FLOATS_PER_VERTEX * FLOATS_PER_SPRITE
+  );
+  private currentTexture: Texture | null = null;
 
   constructor(
     private gl: WebGL2RenderingContext,
     private width: number,
     private height: number
   ) {}
+
+  private setupIndexBuffer() {
+    const data = new Uint16Array(MAX_NUMBER_OF_SPRITES * INDICES_PER_SPRITE);
+
+    for (let i = 0; i < MAX_NUMBER_OF_SPRITES; i++) {
+      // t1
+      data[i * INDICES_PER_SPRITE + 0] = i * 4 + 0;
+      data[i * INDICES_PER_SPRITE + 1] = i * 4 + 1;
+      data[i * INDICES_PER_SPRITE + 2] = i * 4 + 3;
+
+      // 2
+      data[i * INDICES_PER_SPRITE + 3] = i * 4 + 1;
+      data[i * INDICES_PER_SPRITE + 4] = i * 4 + 2;
+      data[i * INDICES_PER_SPRITE + 5] = i * 4 + 3;
+    }
+
+    this.indexBuffer = BufferUtil.createIndexBuffer(this.gl, data);
+  }
 
   public async initialize() {
     this.camera = new Camera(this.width, this.height);
@@ -73,75 +101,86 @@ export class SpriteRenderer {
     );
     this.gl.enableVertexAttribArray(2);
 
-    // prettier-ignore
-    const indexBuffer = BufferUtil.createIndexBuffer(
-      this.gl,
-      new Uint8Array([
-        0, 1, 3,
-        1, 2, 3
-        ])
-    );
+    this.setupIndexBuffer();
   }
 
   public begin() {
+    this.instanceCount = 0;
     this.camera.update();
 
     this.gl.enable(this.gl.BLEND);
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-  }
 
-  public end() {}
-
-  public drawSprite(texture: Texture, rect: Rect) {
     this.gl.useProgram(this.program);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, texture.texture);
-
     this.gl.uniformMatrix4fv(
       this.projectionViewMatrixLocation,
       false,
       this.camera.projectionViewMatrix
     );
 
+    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+  }
+
+  public drawSprite(texture: Texture, rect: Rect) {
+    if (this.currentTexture || this.currentTexture != texture) {
+      this.end();
+      this.gl.bindTexture(this.gl.TEXTURE_2D, texture.texture);
+      this.currentTexture = texture;
+    }
+    let i = this.instanceCount * FLOATS_PER_SPRITE;
+
     // top left
-    this.data[0] = rect.x; // x
-    this.data[1] = rect.y; // y
-    this.data[2] = 0; // u
-    this.data[3] = 1; // v
-    this.data[4] = 1; // r
-    this.data[5] = 1; // g
-    this.data[6] = 1; // b
+    this.data[0 + i] = rect.x; // x
+    this.data[1 + i] = rect.y; // y
+    this.data[2 + i] = 0; // u
+    this.data[3 + i] = 1; // v
+    this.data[4 + i] = 1; // r
+    this.data[5 + i] = 1; // g
+    this.data[6 + i] = 1; // b
 
     // top right
-    this.data[7] = rect.x + rect.width;
-    this.data[8] = rect.y;
-    this.data[9] = 1;
-    this.data[10] = 1;
-    this.data[11] = 1;
-    this.data[12] = 1;
-    this.data[13] = 1;
+    this.data[7 + i] = rect.x + rect.width; // x
+    this.data[8 + i] = rect.y; // y
+    this.data[9 + i] = 1; // u
+    this.data[10 + i] = 1; // v
+    this.data[11 + i] = 1; // r
+    this.data[12 + i] = 1; // g
+    this.data[13 + i] = 1; // b
 
     // bottom right
-    this.data[14] = rect.x + rect.width;
-    this.data[15] = rect.y + rect.height;
-    this.data[16] = 1;
-    this.data[17] = 0;
-    this.data[18] = 1;
-    this.data[19] = 1;
-    this.data[20] = 1;
+    this.data[14 + i] = rect.x + rect.width; // x
+    this.data[15 + i] = rect.y + rect.height; // y
+    this.data[16 + i] = 1; // u
+    this.data[17 + i] = 0; // v
+    this.data[18 + i] = 1; // r
+    this.data[19 + i] = 1; // g
+    this.data[20 + i] = 1; // b
 
     // bottom left
-    this.data[21] = rect.x;
-    this.data[22] = rect.y + rect.height;
-    this.data[23] = 0;
-    this.data[24] = 0;
-    this.data[25] = 1;
-    this.data[26] = 1;
-    this.data[27] = 1;
+    this.data[21 + i] = rect.x; // x
+    this.data[22 + i] = rect.y + rect.height; // y
+    this.data[23 + i] = 0; // u
+    this.data[24 + i] = 0; // v
+    this.data[25 + i] = 1; // r
+    this.data[26 + i] = 1; // g
+    this.data[27 + i] = 1; // b
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+    this.instanceCount++;
+
+    if (this.instanceCount >= MAX_NUMBER_OF_SPRITES) {
+      this.end();
+    }
+  }
+
+  public end() {
     this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.data);
-
-    // this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
-    this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_BYTE, 0);
+    this.gl.drawElements(
+      this.gl.TRIANGLES,
+      INDICES_PER_SPRITE * this.instanceCount,
+      this.gl.UNSIGNED_SHORT,
+      0
+    );
+    this.instanceCount = 0;
   }
 }

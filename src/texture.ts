@@ -14,7 +14,6 @@ export class Texture {
       image.src = uri;
       image.onload = () => {
         const texture = gl.createTexture()!;
-
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(
           gl.TEXTURE_2D,
@@ -30,10 +29,13 @@ export class Texture {
       };
 
       image.onerror = () => {
-        console.error(`failed to load image ${uri}`);
+        const msg = `Failed to load image ${uri}`;
+        console.error(msg);
+        alert(msg);
         reject();
       };
     });
+
     return promise;
   }
 }
