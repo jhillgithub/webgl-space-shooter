@@ -12,6 +12,7 @@ export class Renderer {
   private camera!: Camera;
   private projectionViewMatrixLocation!: WebGLUniformLocation;
   private buffer!: WebGLBuffer;
+  private data!: Float32Array = new Float32Array(7 * 4);
 
   constructor() {}
 
@@ -39,20 +40,7 @@ export class Renderer {
       "projectionViewMatrix"
     )!;
     this.gl.useProgram(this.program);
-
-    const x = 100;
-    const y = 100;
-    const w = 200;
-    const h = 200;
-
-    // prettier-ignore
-    this.buffer = this.createBuffer([
-      // x, y, u, v, r, g, b
-      x, y, 0, 1, 1, 1, 1,  // left top
-      x+w, y, 1, 1, 1, 1, 1,   // right top
-      x+w, y+h, 1, 0, 1, 1, 1,  // right bottom
-      x, y+h, 0, 0, 1, 1, 1, // left bottom
-    ]);
+    this.buffer = this.createArrayBuffer(this.data);
 
     const stride =
       2 * Float32Array.BYTES_PER_ELEMENT +
@@ -123,14 +111,10 @@ export class Renderer {
     return shader;
   }
 
-  private createBuffer(data: number[]): WebGLBuffer {
+  private createArrayBuffer(data: Float32Array): WebGLBuffer {
     const buffer = this.gl.createBuffer()!;
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
-      new Float32Array(data),
-      this.gl.STATIC_DRAW
-    );
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
     return buffer;
   }
 
@@ -144,12 +128,9 @@ export class Renderer {
     return buffer;
   }
 
-  public draw(): void {
-    this.camera.update();
-
-    this.gl.clearColor(0.0, 1.0, 1.0, 1.0);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, Content.playerTexture.texture);
+  public drawSprite(texture: Texture, rect: Rect) {
+    this.gl.useProgram(this.program);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture.texture);
 
     this.gl.uniformMatrix4fv(
       this.projectionViewMatrixLocation,
@@ -157,8 +138,57 @@ export class Renderer {
       this.camera.projectionViewMatrix
     );
 
+    // top left
+    this.data[0] = rect.x; // x
+    this.data[1] = rect.y; // y
+    this.data[2] = 0; // u
+    this.data[3] = 1; // v
+    this.data[4] = 1; // r
+    this.data[5] = 1; // g
+    this.data[6] = 1; // b
+
+    // top right
+    this.data[7] = rect.x + rect.width;
+    this.data[8] = rect.y;
+    this.data[9] = 1;
+    this.data[10] = 1;
+    this.data[11] = 1;
+    this.data[12] = 1;
+    this.data[13] = 1;
+
+    // bottom right
+    this.data[14] = rect.x + rect.width;
+    this.data[15] = rect.y + rect.height;
+    this.data[16] = 1;
+    this.data[17] = 0;
+    this.data[18] = 1;
+    this.data[19] = 1;
+    this.data[20] = 1;
+
+    // bottom left
+    this.data[21] = rect.x;
+    this.data[22] = rect.y + rect.height;
+    this.data[23] = 0;
+    this.data[24] = 0;
+    this.data[25] = 1;
+    this.data[26] = 1;
+    this.data[27] = 1;
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+    this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.data);
+
     // this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_BYTE, 0);
+  }
+
+  public draw(): void {
+    this.camera.update();
+
+    this.gl.clearColor(0.0, 1.0, 1.0, 1.0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    this.drawSprite(Content.playerTexture, new Rect(100, 100, 99, 75));
+    this.drawSprite(Content.ufoBlue, new Rect(300, 100, 91, 91));
+    this.drawSprite(Content.ufoBlue, new Rect(100, 300, 91, 91));
 
     window.requestAnimationFrame(() => this.draw());
   }
