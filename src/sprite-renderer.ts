@@ -1,5 +1,6 @@
 import { BufferUtil } from "./buffer-util";
 import { Camera } from "./camera";
+import { Color } from "./color";
 import { ProgramUtil } from "./program-util";
 import { Rect } from "./rect";
 import fragmentShaderSource from "./shaders/part1/fragment.glsl?raw";
@@ -22,6 +23,7 @@ export class SpriteRenderer {
     MAX_NUMBER_OF_SPRITES * FLOATS_PER_VERTEX * FLOATS_PER_SPRITE
   );
   private currentTexture: Texture | null = null;
+  private defaultColor = new Color();
 
   constructor(
     private gl: WebGL2RenderingContext,
@@ -122,7 +124,11 @@ export class SpriteRenderer {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
   }
 
-  public drawSprite(texture: Texture, rect: Rect) {
+  public drawSprite(
+    texture: Texture,
+    rect: Rect,
+    color: Color = this.defaultColor
+  ) {
     if (this.currentTexture || this.currentTexture != texture) {
       this.end();
       this.gl.bindTexture(this.gl.TEXTURE_2D, texture.texture);
@@ -135,36 +141,97 @@ export class SpriteRenderer {
     this.data[1 + i] = rect.y; // y
     this.data[2 + i] = 0; // u
     this.data[3 + i] = 1; // v
-    this.data[4 + i] = 1; // r
-    this.data[5 + i] = 1; // g
-    this.data[6 + i] = 1; // b
+    this.data[4 + i] = color.r; // r
+    this.data[5 + i] = color.g; // g
+    this.data[6 + i] = color.b; // b
 
     // top right
     this.data[7 + i] = rect.x + rect.width; // x
     this.data[8 + i] = rect.y; // y
     this.data[9 + i] = 1; // u
     this.data[10 + i] = 1; // v
-    this.data[11 + i] = 1; // r
-    this.data[12 + i] = 1; // g
-    this.data[13 + i] = 1; // b
+    this.data[11 + i] = color.r; // r
+    this.data[12 + i] = color.g; // g
+    this.data[13 + i] = color.b; // b
 
     // bottom right
     this.data[14 + i] = rect.x + rect.width; // x
     this.data[15 + i] = rect.y + rect.height; // y
     this.data[16 + i] = 1; // u
     this.data[17 + i] = 0; // v
-    this.data[18 + i] = 1; // r
-    this.data[19 + i] = 1; // g
-    this.data[20 + i] = 1; // b
+    this.data[18 + i] = color.r; // r
+    this.data[19 + i] = color.g; // g
+    this.data[20 + i] = color.b; // b
 
     // bottom left
     this.data[21 + i] = rect.x; // x
     this.data[22 + i] = rect.y + rect.height; // y
     this.data[23 + i] = 0; // u
     this.data[24 + i] = 0; // v
-    this.data[25 + i] = 1; // r
-    this.data[26 + i] = 1; // g
-    this.data[27 + i] = 1; // b
+    this.data[25 + i] = color.r; // r
+    this.data[26 + i] = color.g; // g
+    this.data[27 + i] = color.b; // b
+
+    this.instanceCount++;
+
+    if (this.instanceCount >= MAX_NUMBER_OF_SPRITES) {
+      this.end();
+    }
+  }
+
+  public drawSpriteSource(
+    texture: Texture,
+    rect: Rect,
+    sourceRect: Rect,
+    color: Color = this.defaultColor
+  ) {
+    if (this.currentTexture || this.currentTexture != texture) {
+      this.end();
+      this.gl.bindTexture(this.gl.TEXTURE_2D, texture.texture);
+      this.currentTexture = texture;
+    }
+    let i = this.instanceCount * FLOATS_PER_SPRITE;
+
+    let u0 = sourceRect.x / texture.width;
+    let v0 = 1 - sourceRect.y / texture.height;
+    let u1 = (sourceRect.x + sourceRect.width) / texture.width;
+    let v1 = 1 - (sourceRect.y + sourceRect.height) / texture.height;
+
+    // top left
+    this.data[0 + i] = rect.x; // x
+    this.data[1 + i] = rect.y; // y
+    this.data[2 + i] = u0; // u
+    this.data[3 + i] = v0; // v
+    this.data[4 + i] = color.r; // r
+    this.data[5 + i] = color.g; // g
+    this.data[6 + i] = color.b; // b
+
+    // top right
+    this.data[7 + i] = rect.x + rect.width; // x
+    this.data[8 + i] = rect.y; // y
+    this.data[9 + i] = u1; // u
+    this.data[10 + i] = v0; // v
+    this.data[11 + i] = color.r; // r
+    this.data[12 + i] = color.g; // g
+    this.data[13 + i] = color.b; // b
+
+    // bottom right
+    this.data[14 + i] = rect.x + rect.width; // x
+    this.data[15 + i] = rect.y + rect.height; // y
+    this.data[16 + i] = u1; // u
+    this.data[17 + i] = v1; // v
+    this.data[18 + i] = color.r; // r
+    this.data[19 + i] = color.g; // g
+    this.data[20 + i] = color.b; // b
+
+    // bottom left
+    this.data[21 + i] = rect.x; // x
+    this.data[22 + i] = rect.y + rect.height; // y
+    this.data[23 + i] = u0; // u
+    this.data[24 + i] = v1; // v
+    this.data[25 + i] = color.r; // r
+    this.data[26 + i] = color.g; // g
+    this.data[27 + i] = color.b; // b
 
     this.instanceCount++;
 
